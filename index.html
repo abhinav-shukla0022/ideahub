@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IdeaHub - Sign In / Login</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: #fff;
+    }
+    .container {
+      padding: 2rem;
+      text-align: center;
+    }
+    .hidden {
+      display: none;
+    }
+    .auth-box input {
+      display: block;
+      margin: 1rem auto;
+      padding: 0.8rem;
+      width: 80%;
+      max-width: 300px;
+      border: none;
+      border-radius: 10px;
+      background-color: #eee;
+    }
+    .auth-box button {
+      margin: 0.5rem;
+      padding: 0.8rem 2rem;
+      background-color: #1abc9c;
+      border: none;
+      border-radius: 10px;
+      color: white;
+      cursor: pointer;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem;
+      background-color: #1f1f1f;
+      border-bottom: 2px solid #1abc9c;
+    }
+    .logo {
+      font-size: 1.5rem;
+    }
+    .idea-form textarea {
+      width: 80%;
+      max-width: 500px;
+      height: 100px;
+      margin: 1rem auto;
+      display: block;
+      padding: 1rem;
+      border-radius: 10px;
+      border: none;
+      resize: none;
+    }
+    .idea-form button {
+      padding: 0.6rem 1.5rem;
+      background-color: #3498db;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #ideas, #savedIdeas {
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    .idea {
+      background-color: #2c3e50;
+      border-radius: 10px;
+      padding: 1rem;
+      margin: 1rem auto;
+      max-width: 600px;
+      position: relative;
+    }
+    .idea button {
+      margin: 0.3rem;
+      padding: 0.4rem 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .like { background-color: #2ecc71; color: white; }
+    .dislike { background-color: #e74c3c; color: white; }
+    .comment { background-color: #9b59b6; color: white; }
+    .delete { background-color: #e67e22; color: white; }
+    .patent { background-color: #f39c12; color: white; }
+    .verify { background-color: #2980b9; color: white; }
+    .comment-section {
+      text-align: left;
+      margin-top: 10px;
+    }
+    .comment-section p {
+      background-color: #34495e;
+      padding: 0.5rem;
+      border-radius: 6px;
+      margin: 0.3rem 0;
+    }
+  </style>
+  <script>
+    let currentUser = '';
+    let ideas = JSON.parse(localStorage.getItem('ideas') || '[]');
+  
+    function goToPage(pageNumber) {
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById('page' + i).classList.add('hidden');
+      }
+      document.getElementById('page' + pageNumber).classList.remove('hidden');
+      if (pageNumber === 2) renderIdeas();
+      if (pageNumber === 3) renderSavedIdeas();
+    }
+  
+    function signIn() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      if (username && password) {
+        const users = JSON.parse(localStorage.getItem('users') || '{}');
+        if (users[username]) {
+          alert('User already exists. Please login.');
+        } else {
+          users[username] = password;
+          localStorage.setItem('users', JSON.stringify(users));
+          currentUser = username;
+          goToPage(2);
+        }
+      } else {
+        alert('Please enter both username and password.');
+      }
+    }
+  
+    function login() {
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const users = JSON.parse(localStorage.getItem('users') || '{}');
+      if (users[username] && users[username] === password) {
+        currentUser = username;
+        goToPage(2);
+      } else {
+        alert('Invalid username or password.');
+      }
+    }
+  
+    function signOut() {
+      currentUser = '';
+      goToPage(1);
+    }
+  
+    function addIdea() {
+      const text = document.getElementById('ideaInput').value;
+      if (text) {
+        const idea = {
+          id: Date.now(),
+          user: currentUser,
+          text,
+          likes: 0,
+          dislikes: 0,
+          comments: [],
+          saved: false,
+          likedBy: [],
+          dislikedBy: []
+        };
+        ideas.push(idea);
+        localStorage.setItem('ideas', JSON.stringify(ideas));
+        document.getElementById('ideaInput').value = '';
+        renderIdeas();
+      }
+    }
+  
+    function renderIdeas() {
+      const container = document.getElementById('ideas');
+      container.innerHTML = '';
+      ideas.forEach(idea => {
+        const div = document.createElement('div');
+        div.className = 'idea';
+        let commentsHTML = '';
+        if (idea.comments.length > 0) {
+          commentsHTML += '<div class="comment-section">';
+          idea.comments.forEach(c => {
+            commentsHTML += `<p>${c}</p>`;
+          });
+          commentsHTML += '</div>';
+        }
+        div.innerHTML = `
+          <p><strong>${idea.user}</strong>: ${idea.text}</p>
+          <button class="like" onclick="likeIdea(${idea.id})">Like (${idea.likes})</button>
+          <button class="dislike" onclick="dislikeIdea(${idea.id})">Dislike (${idea.dislikes})</button>
+          <button class="comment" onclick="commentIdea(${idea.id})">Comment</button>
+          <button onclick="saveIdea(${idea.id})">Save</button>
+          ${currentUser === 'Pranav' ? `<button class='delete' onclick='deleteIdea(${idea.id})'>Delete</button>` : ''}
+          ${commentsHTML}
+        `;
+        container.appendChild(div);
+      });
+    }
+  
+    function likeIdea(id) {
+      const idea = ideas.find(i => i.id === id);
+      if (idea && !idea.likedBy.includes(currentUser) && !idea.dislikedBy.includes(currentUser)) {
+        idea.likes++;
+        idea.likedBy.push(currentUser);
+        updateIdeas();
+      } else {
+        alert("You have already reacted to this idea.");
+      }
+    }
+  
+    function dislikeIdea(id) {
+      const idea = ideas.find(i => i.id === id);
+      if (idea && !idea.dislikedBy.includes(currentUser) && !idea.likedBy.includes(currentUser)) {
+        idea.dislikes++;
+        idea.dislikedBy.push(currentUser);
+        updateIdeas();
+      } else {
+        alert("You have already reacted to this idea.");
+      }
+    }
+  
+    function commentIdea(id) {
+      const comment = prompt('Enter your comment:');
+      const idea = ideas.find(i => i.id === id);
+      if (idea && comment) {
+        idea.comments.push(`${currentUser}: ${comment}`);
+        updateIdeas();
+      }
+    }
+  
+    function saveIdea(id) {
+      const idea = ideas.find(i => i.id === id);
+      if (idea) {
+        idea.saved = true;
+        updateIdeas();
+        goToPage(3);
+      }
+    }
+  
+    function renderSavedIdeas() {
+      const container = document.getElementById('savedIdeas');
+      container.innerHTML = '';
+      ideas.filter(i => i.saved).forEach(idea => {
+        const div = document.createElement('div');
+        div.className = 'idea';
+        div.innerHTML = `
+          <p><strong>${idea.user}</strong>: ${idea.text}</p>
+          ${currentUser === 'Pranav' ? `<button class='delete' onclick='deleteIdea(${idea.id})'>Delete</button>` : ''}
+          <button class="patent">Patent</button>
+          <button class="verify">Verify</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+  
+    function deleteIdea(id) {
+      if (currentUser === 'Pranav') {
+        ideas = ideas.filter(i => i.id !== id);
+        updateIdeas();
+      } else {
+        alert('Only admin can delete ideas.');
+      }
+    }
+  
+    function updateIdeas() {
+      localStorage.setItem('ideas', JSON.stringify(ideas));
+      renderIdeas();
+      renderSavedIdeas();
+    }
+  
+    window.onload = () => {
+      const users = JSON.parse(localStorage.getItem('users') || '{}');
+      users['Pranav'] = '3558'; // Admin account
+      localStorage.setItem('users', JSON.stringify(users));
+      renderIdeas();
+      renderSavedIdeas();
+    };
+  </script>
+  
+</head>
+<body>
+  <!-- Page 1: Sign In / Login -->
+  <div class="container" id="page1">
+    <h1>Welcome to IdeaHub</h1>
+    <div class="auth-box">
+      <input type="text" id="username" placeholder="Username">
+      <input type="password" id="password" placeholder="Password">
+      <button onclick="login()">Login</button>
+      <button onclick="signIn()">Sign Up</button>
+    </div>
+  </div>
+
+  <!-- Page 2: Main Interface -->
+  <div class="container hidden" id="page2">
+    <header>
+      <div class="logo">🚀💡 IdeaHub</div>
+      <button onclick="signOut()">Sign Out</button>
+    </header>
+    <section class="idea-form">
+      <textarea id="ideaInput" placeholder="Enter your idea..."></textarea>
+      <button onclick="addIdea()">Add Idea</button>
+    </section>
+    <section id="ideas"></section>
+  </div>
+
+  <!-- Page 3: Saved Ideas -->
+  <div class="container hidden" id="page3">
+    <h2>Your Saved Ideas</h2>
+    <section id="savedIdeas"></section>
+    <button onclick="goToPage(2)">Back to Ideas</button>
+  </div>
+</body>
+</html>
